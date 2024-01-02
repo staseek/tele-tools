@@ -1,12 +1,19 @@
+"""
+Module for cleaning cloud chats
+"""
 import logging
 import argparse
 import typing
-import telethon
 import datetime
 import re
+import telethon
+
 
 
 class Cleaner:
+    """
+    Module for cleaning cloud chats
+    """
     module_name = 'cleaner'
     module_description = 'Clean messages of users with some criterias'
 
@@ -14,6 +21,11 @@ class Cleaner:
         self.logger = logger if logger else logging.getLogger('cleaner_logger')
 
     def arguments_fill(self, parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+        """
+        Fill argument parser with arguments for module
+        :param parser: ArgumentParser
+        :return: new ArgumentParser
+        """
         parser.add_argument('--older', help='Remove message older than date')
         parser.add_argument('--newer', help='Remove messages newer than date')
         parser.add_argument('--delta', help='Remove messages not in delta in days from today (N days ago)')
@@ -21,10 +33,17 @@ class Cleaner:
         parser.add_argument('--chat_id', type=lambda s: [int(item) for item in s.split(',')])
         return parser
 
-    async def run(self, client: telethon.TelegramClient, args):
+    async def run(self, client: telethon.TelegramClient, args) -> None:
+        """
+        Main run module functions
+        :param client: initialized TelegramClient
+        :param args: parsed arguments
+        :return: None
+        """
         self.logger.info('started cleaning module')
         for dialog_to_clean in [x for x in await client.get_dialogs() if x.id in args.chat_id]:
-            self.logger.info(f'starting clean dialog with id={dialog_to_clean.id} and name={dialog_to_clean.name}')
+            self.logger.info('starting clean dialog with id=%s and name=%s', dialog_to_clean.id,
+                             dialog_to_clean.name)
             messages_to_delete = []
             interval_to_delete = (None, None)
             messages_to_not_delete = set([])
@@ -33,9 +52,8 @@ class Cleaner:
                                                       filter=telethon.types.InputMessagesFilterPinned()):
                 messages_to_not_delete.add(message.id)
             self.logger.info("finished scrapping pinned messages for saving them")
-            async for message in client.iter_messages(dialog_to_clean):
-                # print(datetime.datetime.now(datetime.timezone.utc) - message.date)
-                self.logger.debug(f"processing message with id={message.id}")
+            async for message in client.iter_messages(dialog_to_clean, reverse=True, wait_time=1):
+                # self.logger.debug(f"processing message with id={message.id}")
                 if (args.older and message.date < datetime.datetime.strptime(args.older, '%Y-%m-%d')) or \
                         (args.newer and message.date > datetime.datetime.strptime(args.newer, '%Y-%m-%d')) or \
                         (args.delta and datetime.datetime.now(
@@ -48,20 +66,20 @@ class Cleaner:
                         else:
                             interval_to_delete = (min(interval_to_delete[0], message.date),
                                                   max(interval_to_delete[1], message.date))
-                self.logger.debug(f"processed message with id={message.id}")
+                # self.logger.debug(f"processed message with id={message.id}")
                 if len(messages_to_delete) > 95:
                     deleted_messages = await client.delete_messages(entity=dialog_to_clean.entity.id,
                                                                     message_ids=messages_to_delete,
                                                                     revoke=True)
-                    self.logger.info(f'chunk cleared for interval from {interval_to_delete[0]}'
-                                     f' till {interval_to_delete[1]}. Deleted {len(deleted_messages)} messages')
+                    self.logger.info('chunk cleared for interval from %s till %s. Deleted %s messages',
+                                     interval_to_delete[0], interval_to_delete[1], deleted_messages[0].pts_count)
                     interval_to_delete = (None, None)
                     messages_to_delete = []
             if len(messages_to_delete) > 0:
                 deleted_messages = await client.delete_messages(entity=dialog_to_clean.entity.id,
                                                                 message_ids=messages_to_delete,
                                                                 revoke=True)
-                self.logger.info(f'last chunk cleared for interval from {interval_to_delete[0]}'
-                                 f' till {interval_to_delete[1]}. Deleted {len(deleted_messages)} messages.')
+                self.logger.info('chunk cleared for interval from %s till %s. Deleted %s messages',
+                                 interval_to_delete[0], interval_to_delete[1], deleted_messages[0].pts_count)
                 messages_to_delete = []
         self.logger.info('finished cleaning module')

@@ -1,7 +1,7 @@
 # Telegram CLI tools 
 
 Some useful scripts for work with telegram accounts with CLI.
-Supports 2-fa authorization.
+It supports 2-fa authorization.
 
 ## How to run
 1. Clone repository
@@ -17,19 +17,35 @@ API_HASH=sdkjaksljdaisojd890qwj8d832jd
 ## Common parameters
 
 Now there are these modules:
+```
+--phone %your_phone_number%
+--session-name %session_name_file%
+```
 
 ### Get Dialog Information module
 Iterate through your dialog list and print it to stdout.
+This module has no specific arguments. 
 
 Example:
 ```
 python3 tele_tools.py --phone %your_phone_here% show_dialogs
 ```
-Print in stdout chat_id and chat name for all dialogs in account.
+It prints to stdout chat_id and chat name for all dialogs in the account.
+
 
 ### Clean chats module
+This module gets chat history and removes messages. (If you are admin - it removes anybody's messages if you aren't admin only your messages) 
+
+
+```
+--older - remove message older than date
+--newer - remove messages newer than date
+--delta - remove mesages not in delta days from today
+--regex - remove message matched to regex
+--chat_id - comma-separated chat identificitors
+```
 
 Example:
 ```
-python3 tele_tools.py --phone %your_phone_here% clean --delta 30 --chat_id -133778221
+python3 tele_tools.py --phone %your_phone_here% clean --delta 30 --chat_id %your_chat_id_for_cleaning%
 ```

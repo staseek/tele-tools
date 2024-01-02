@@ -1,15 +1,20 @@
+"""
+Main script
+"""
 import argparse
+import asyncio
 import logging
+import sys
 
+from configparser import ConfigParser
+
+from pathlib import Path
 import phonenumbers
 import telethon.errors.rpcerrorlist
 
 import tools
 from telethon import TelegramClient
-from configparser import ConfigParser
-import asyncio
 
-from pathlib import Path
 
 config = ConfigParser()
 config.read('./config.ini')
@@ -25,18 +30,19 @@ logging_handler = logging.StreamHandler()
 logging_handler.setFormatter(FORMATTER)
 logger.addHandler(logging_handler)
 logger.setLevel(logging.DEBUG)
-actions = dict(
-        clean=tools.cleaner.Cleaner(logger=logger),
-        show_dialogs=tools.show_dialogs_info.DialogInformationer(logger=logger)
-        #donwload_files=tools.download_files.DownloadFiles(),
-        #unremover=tools.unremover.Unremover()
-    )
+actions = {
+        "clean": tools.cleaner.Cleaner(logger=logger),
+        "show_dialogs": tools.show_dialogs_info.DialogInformationer(logger=logger)
+}
 
 SESSIONS_PATH = Path('sessions')
 
 
-async def main():
-
+async def main() -> None:
+    """
+    Main function
+    :return: None
+    """
     parser = argparse.ArgumentParser(prog='Telegram Tools',
                                      description='Command line tool for telegram with'
                                                  ' some actions with your account')
@@ -52,22 +58,22 @@ async def main():
     if args.session_name is None and args.phone is None:
         logging.error('Not specified session_name of already used'
                       ' telegram account or phone for new login')
-        exit(1)
+        sys.exit(1)
 
     if args.session_name is not None and args.phone is None and not Path(args.session_name).exists():
-        logging.error(f'Not exist session file {args.session_name} and'
-                      f' can\'t create new - no phone specified')
-        exit(1)
+        logging.error('Not exist session file %s and'
+                      ' can\'t create new - no phone specified', args.session_name)
+        sys.exit(1)
 
     if args.phone is not None:
         try:
             phonenumbers.parse(args.phone, None)
-        except phonenumbers.phonenumberutil.NumberParseException as exc:
+        except phonenumbers.phonenumberutil.NumberParseException:
             phonenumbers.parse("+" + args.phone)
 
     if args.command not in actions:
         logging.critical('Unknown command action')
-        exit(1)
+        sys.exit(1)
 
     client = TelegramClient(str(SESSIONS_PATH / Path(args.session_name if args.session_name else args.phone)),
                             API_ID,
@@ -81,7 +87,7 @@ async def main():
         try:
             me = await client.sign_in(args.phone, input('Enter code: '))
             logger.info(me)
-        except telethon.errors.rpcerrorlist.SessionPasswordNeededError as exc:
+        except telethon.errors.rpcerrorlist.SessionPasswordNeededError:
             logger.info('two factor is enabled')
             password = input("Enter password: ")
             me = await client.sign_in(password=password)
@@ -90,4 +96,6 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
+    #asyncio.run(main())
