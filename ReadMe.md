@@ -43,6 +43,7 @@ This module gets chat history and removes messages. (If you are admin - it remov
 --delta - remove mesages not in delta days from today
 --regex - remove message matched to regex
 --chat_id - comma-separated chat identificitors
+--dry-run - dry run. Just print messages, not delete
 ```
 
 Example:
