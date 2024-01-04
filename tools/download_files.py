@@ -18,9 +18,7 @@ class FilesDownloader:
         :param parser:
         :return: new parser
         """
-        parser.add_argument('--older')
-        parser.add_argument('--newer')
-        parser.add_argument('--regex')
+        parser.add_argument('--chat_id', type=lambda s: [int(item) for item in s.split(',')])
         return parser
 
     def run(self) -> None:
