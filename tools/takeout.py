@@ -33,14 +33,15 @@ class Takeout:
         :return:
         """
 
-        def to_json_cumstom(x) -> str:
+        def to_json_custom(x) -> str:
             if hasattr(x, 'to_json'):
-                return x.to_json()
+                return json.loads(x.to_json())
             elif hasattr(x, 'to_dict'):
-                return json.dumps(x.to_dict(), default=to_json_cumstom)
+                return x.to_dict()
             else:
                 try:
-                    return json.dumps(x)
+                    json.dumps(x)
+                    return x
                 except Exception:
                     return str(x)
 
@@ -51,7 +52,7 @@ class Takeout:
             mef.write(me.to_json())
         with open(current_takeout_path / 'dialogs.json', 'w') as dialogs_f:
             async for dialog in client.iter_dialogs():
-                dialogs_f.write(json.dumps(dialog.__dict__, default=to_json_cumstom))
+                dialogs_f.write(json.dumps(dialog.__dict__, default=to_json_custom))
                 dialogs_f.write('\n')
 
 
