@@ -24,6 +24,9 @@ class Takeout:
         :param parser: ArgumentParser
         :return: new ArgumentParser
         """
+        parser.add_argument("--download-channels", action="store_true", help="Download channels messages. ")
+        parser.add_argument("--text-only", help="Download only text infomation, no media")
+        parser.add_argument('--chat_id', type=lambda s: [int(item) for item in s.split(',')])
         return parser
 
     async def run(self,client: telethon.TelegramClient, args) -> None:

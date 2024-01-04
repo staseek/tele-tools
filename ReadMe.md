@@ -50,3 +50,12 @@ Example:
 ```
 python3 tele_tools.py --phone %your_phone_here% clean --delta 30 --chat_id %your_chat_id_for_cleaning%
 ```
+
+### Takeout module
+This module downloads information from your cloud account. All messages and media files.
+
+```
+--download-channels - download messages from channels 
+--chat-id - comma-separated chat identificitors
+--text-only - download only text infomation, no media
+```
