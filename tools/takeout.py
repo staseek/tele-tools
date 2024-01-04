@@ -5,6 +5,7 @@ from pathlib import Path
 import telethon
 import json
 from telethon.tl.functions.contacts import GetContactsRequest
+from telethon.tl.types.contacts import Contacts
 
 class Takeout:
     """
@@ -50,15 +51,19 @@ class Takeout:
         current_takeout_path.mkdir(parents=True, exist_ok=True)
         with open(current_takeout_path / 'me.json', 'w') as mef:
             mef.write(me.to_json())
-        result = client.invoke(GetContactsRequest(hash=client.api_id))
-        print(result)
-        exit(10)
+        with open(current_takeout_path / 'contacts.json', 'w') as contactsf:
+            contactsf.write(
+                json.dumps(await client(GetContactsRequest(hash=client.api_id)),
+                           default=to_json_custom)
+            )
+
         with open(current_takeout_path / 'dialogs.json', 'w') as dialogs_f:
             async for dialog in client.iter_dialogs():
                 dialogs_f.write(json.dumps(dialog.__dict__, default=to_json_custom))
                 dialogs_f.write('\n')
+                current_dialog_path = current_takeout_path / Path(str(dialog.id))
+                current_dialog_path.mkdir(exist_ok=True, parents=True)
                 async for message in client.iter_messages(dialog, wait_time=1):
-                    current_dialog_path = current_takeout_path /
-                    current_dialog_path.mkdir(exist_ok=True, parents=True)
+                    pass
 
 
