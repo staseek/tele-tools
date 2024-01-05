@@ -6,6 +6,15 @@ import telethon
 import json
 from telethon.tl.functions.contacts import GetContactsRequest
 from telethon.tl.types.contacts import Contacts
+from functools import reduce
+
+
+async def aenumerate(asequence, start=0):
+    """Asynchronously enumerate an async iterator from a given start value"""
+    n = start
+    async for elem in asequence:
+        yield n, elem
+        n += 1
 
 class Takeout:
     """
@@ -29,7 +38,7 @@ class Takeout:
         parser.add_argument('--chat_id', type=lambda s: [int(item) for item in s.split(',')])
         return parser
 
-    async def run(self,client: telethon.TelegramClient, args) -> None:
+    async def run(self, client: telethon.TelegramClient, args) -> None:
         """
 
         :param client:
@@ -61,12 +70,21 @@ class Takeout:
             )
 
         with open(current_takeout_path / 'dialogs.json', 'w') as dialogs_f:
-            async for dialog in client.iter_dialogs():
+            dialogs_count = reduce(lambda y, x: y + (0 if x.is_channel and not args.download_channels else 1),
+                                   await client.get_dialogs(), 0)
+            async for dialog_number, dialog in aenumerate(client.iter_dialogs()):
+                self.logger.info('downloading %s dialog started ... %s', dialog_number + 1, dialog.name)
                 dialogs_f.write(json.dumps(dialog.__dict__, default=to_json_custom))
                 dialogs_f.write('\n')
                 current_dialog_path = current_takeout_path / Path(str(dialog.id))
                 current_dialog_path.mkdir(exist_ok=True, parents=True)
-                async for message in client.iter_messages(dialog, wait_time=1):
-                    pass
-
+                with open(current_dialog_path / 'info.json', 'w') as dialog_info_f:
+                    dialog_info_f.write(json.dumps(dialog, default=to_json_custom))
+                if dialog.is_channel and not args.download_channels:
+                    continue
+                with open(current_dialog_path / 'messages.json', 'w') as messages_f:
+                    async for message in client.iter_messages(dialog, wait_time=1):
+                        messages_f.write(json.dumps(message, default=to_json_custom))
+                        messages_f.write('\n')
+                self.logger.info('downloading %s dialog %s finished ... OK ', dialog_number + 1, dialog.name)
 
