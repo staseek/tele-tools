@@ -58,4 +58,5 @@ This module downloads information from your cloud account. All messages and medi
 --download-channels - download messages from channels 
 --chat-id - comma-separated chat identificitors
 --text-only - download only text infomation, no media
+--max-size - max size of media to download
 ```

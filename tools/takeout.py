@@ -1,5 +1,6 @@
 import argparse
 import logging
+import random
 import typing
 from pathlib import Path
 import telethon
@@ -36,6 +37,7 @@ class Takeout:
         parser.add_argument("--download-channels", action="store_true", help="Download channels messages. ")
         parser.add_argument("--text-only", help="Download only text infomation, no media")
         parser.add_argument('--chat_id', type=lambda s: [int(item) for item in s.split(',')])
+        parser.add_argument("--max-size", type=int, help="Maximum size of downloading media in bytes")
         return parser
 
     async def run(self, client: telethon.TelegramClient, args) -> None:
@@ -83,8 +85,19 @@ class Takeout:
                 if dialog.is_channel and not args.download_channels:
                     continue
                 with open(current_dialog_path / 'messages.json', 'w') as messages_f:
-                    async for message in client.iter_messages(dialog, wait_time=1):
+                    async for message_number, message in aenumerate(client.iter_messages(dialog, wait_time=1)):
                         messages_f.write(json.dumps(message, default=to_json_custom))
                         messages_f.write('\n')
+                        if message.media:
+                            if args.max_size and message.media.document.size > args.max_size:
+                                continue
+                            new_filename = Path(message.file.name if message.file and
+                                                                   message.file.name
+                                                else f"{str(message_number)}_{random.Random().randint(1, 1000)}")
+                            self.logger.info('downloading media for message with id = %s with name %s',
+                                             message.id, new_filename)
+                            current_dialog_media_path = current_dialog_path / Path('media')
+                            await message.download_media(file=current_dialog_media_path / new_filename)
+
                 self.logger.info('downloading %s dialog %s finished ... OK ', dialog_number + 1, dialog.name)
 
