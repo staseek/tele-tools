@@ -3,6 +3,7 @@ config.ini
 .git
 venv
 .idea
+files
 __pycache__
 .DS_Store
 takeout

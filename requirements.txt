@@ -2,3 +2,4 @@ telethon
 phonenumbers
 tzlocal
 pytz
+tqdm

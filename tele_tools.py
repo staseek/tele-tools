@@ -33,7 +33,8 @@ logger.setLevel(logging.DEBUG)
 actions = {
         "clean": tools.cleaner.Cleaner(logger=logger),
         "show_dialogs": tools.show_dialogs_info.DialogInformationer(logger=logger),
-        "takeout": tools.takeout.Takeout(logger=logger)
+        "takeout": tools.takeout.Takeout(logger=logger),
+        "download_files": tools.download_files.FilesDownloader(logger=logger)
 }
 
 SESSIONS_PATH = Path('sessions')
