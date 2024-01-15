@@ -38,14 +38,16 @@ class FilesDownloader:
         """
 
         logging.info('started downloading files module')
-        aaa = 0
         me = await client.get_me()
         for dialog in [x for x in await client.get_dialogs() if x.id in args.chat_id]:
+            downloaded_files_count = 0
             current_directory = self.download_directory / Path(f"{me.phone}_{me.id}") / Path(f"{dialog.id}_{dialog.name}")
             current_directory.mkdir(parents=True, exist_ok=True)
             async for message in client.iter_messages(dialog):
                 if not message.media:
                     continue
+                if downloaded_files_count >= args.depth:
+                    break
                 self.pbar = tqdm.tqdm(total=message.document.size, unit='B', unit_scale=True)
                 self.prev_curr = 0
 
@@ -54,9 +56,11 @@ class FilesDownloader:
                     self.prev_curr = current
 
                 file_name = message.media.document.attributes[0].file_name
+                # print(message.media.document)
                 path = await message.download_media('{}/{}'.format(current_directory, file_name),
-                                                    progress_callback=progress_callback)
+                                                   progress_callback=progress_callback)
                 self.pbar.close()
+                downloaded_files_count += 1
 
 
         logging.info('finished downloading files module')
