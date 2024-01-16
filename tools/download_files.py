@@ -1,6 +1,7 @@
 """
 Module for downloading files from chat
 """
+import json
 import logging
 import argparse
 import telethon
@@ -43,24 +44,40 @@ class FilesDownloader:
             downloaded_files_count = 0
             current_directory = self.download_directory / Path(f"{me.phone}_{me.id}") / Path(f"{dialog.id}_{dialog.name}")
             current_directory.mkdir(parents=True, exist_ok=True)
-            async for message in client.iter_messages(dialog):
-                if not message.media:
-                    continue
-                if downloaded_files_count >= args.depth:
-                    break
-                self.pbar = tqdm.tqdm(total=message.document.size, unit='B', unit_scale=True)
-                self.prev_curr = 0
+            metainf = None
+            if not (current_directory / Path('files.meta.json')).exists():
+                with open(current_directory / Path('files.meta.json'), 'w') as filesmetaf:
+                    filesmetaf.write('{}')
+                    filesmetaf.write('\n')
+            with open(current_directory / Path('files.meta.json'), 'r') as filesmetaf:
+                metainf = json.loads(filesmetaf.read())
+                metainf_keys = set(metainf.keys())
+                async for message in client.iter_messages(dialog):
+                    if not message.media:
+                        continue
+                    if downloaded_files_count >= args.depth:
+                        break
+                    self.pbar = tqdm.tqdm(total=message.document.size, unit='B', unit_scale=True)
+                    self.prev_curr = 0
 
-                def progress_callback(current, total):
-                    self.pbar.update(current - self.prev_curr)
-                    self.prev_curr = current
+                    def progress_callback(current, total):
+                        self.pbar.update(current - self.prev_curr)
+                        self.prev_curr = current
 
-                file_name = message.media.document.attributes[0].file_name
-                # print(message.media.document)
-                path = await message.download_media('{}/{}'.format(current_directory, file_name),
-                                                   progress_callback=progress_callback)
-                self.pbar.close()
-                downloaded_files_count += 1
+                    file_name = message.media.document.attributes[0].file_name
+                    key = f"{message.media.document.id}_{file_name}"
+                    if key in metainf_keys:
+                        break
+                    else:
+                        metainf_keys.add(key)
+                        metainf[key] = message.media.document.size
+
+                    path = await message.download_media('{}/{}'.format(current_directory, file_name), progress_callback=progress_callback)
+                    self.pbar.close()
+                    downloaded_files_count += 1
+            with open(current_directory / Path('files.meta.json'), 'w') as filesmetaf:
+                filesmetaf.write(json.dumps(metainf, indent=4))
+                filesmetaf.write('\n')
 
 
         logging.info('finished downloading files module')
