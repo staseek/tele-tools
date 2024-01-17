@@ -30,6 +30,7 @@ class FilesDownloader:
         """
         parser.add_argument('--chat_id', type=lambda s: [int(item) for item in s.split(',')])
         parser.add_argument('--depth', type=int, help="Search depth")
+        parser.add_argument("--no_reload", action="store_true", help="If script founds already downloaded file - stop")
         return parser
 
     async def run(self, client: telethon.TelegramClient, args) -> None:
@@ -66,7 +67,7 @@ class FilesDownloader:
 
                     file_name = message.media.document.attributes[0].file_name
                     key = f"{message.media.document.id}_{file_name}"
-                    if key in metainf_keys:
+                    if key in metainf_keys and args.no_reload:
                         break
                     else:
                         metainf_keys.add(key)
@@ -78,6 +79,5 @@ class FilesDownloader:
             with open(current_directory / Path('files.meta.json'), 'w') as filesmetaf:
                 filesmetaf.write(json.dumps(metainf, indent=4))
                 filesmetaf.write('\n')
-
 
         logging.info('finished downloading files module')
