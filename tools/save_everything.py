@@ -8,7 +8,7 @@ import telethon
 import telethon.events
 import typing
 from pathlib import Path
-import tqdm
+import json
 
 
 class SaveEverything:
@@ -36,16 +36,30 @@ class SaveEverything:
         Module start function
         :return: None
         """
+        def to_json_custom(x) -> str:
+            if hasattr(x, 'to_json'):
+                return json.loads(x.to_json())
+            elif hasattr(x, 'to_dict'):
+                return x.to_dict()
+            else:
+                try:
+                    json.dumps(x)
+                    return x
+                except Exception:
+                    return str(x)
 
         logging.info('started listening messages')
         me = await client.get_me()
 
         @client.on(telethon.events.NewMessage)
         async def new_message_handler(event):
-            if args.chat_id is None or len(args.chat_id) == 0 or event.to_id.channel_id in args.chat_id:
-                dialog = [x for x in await client.get_dialogs() if x.id == event.to_id.channel_id][0]
+            if args.chat_id is None or len(args.chat_id) == 0 or event.message.peer_id.user_id in args.chat_id:
+                dialog = [x for x in await client.get_dialogs() if x.id == event.message.peer_id.user_id][0]
                 current_directory = self.download_directory / Path(f"{me.phone}_{me.id}") / Path(
                     f"{dialog.id}_{dialog.name}")
                 current_directory.mkdir(parents=True, exist_ok=True)
+                with open(current_directory / Path("messages.txt"), 'a') as messagesf:
+                    messagesf.write(json.dumps(event.message, default=to_json_custom))
+                    messagesf.write("\n")
         await client.run_until_disconnected()
         logging.info('finished listening messages')

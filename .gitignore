@@ -4,6 +4,7 @@ config.ini
 venv
 .idea
 files
+saver
 __pycache__
 .DS_Store
 takeout
