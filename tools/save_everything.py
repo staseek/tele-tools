@@ -9,6 +9,7 @@ import telethon.events
 import typing
 from pathlib import Path
 import json
+import random
 
 
 class SaveEverything:
@@ -55,11 +56,20 @@ class SaveEverything:
         async def new_message_handler(event):
             if args.chat_id is None or len(args.chat_id) == 0 or event.message.peer_id.user_id in args.chat_id:
                 dialog = [x for x in await client.get_dialogs() if x.id == event.message.peer_id.user_id][0]
-                current_directory = self.download_directory / Path(f"{me.phone}_{me.id}") / Path(
+                current_dialog_path = self.download_directory / Path(f"{me.phone}_{me.id}") / Path(
                     f"{dialog.id}_{dialog.name}")
-                current_directory.mkdir(parents=True, exist_ok=True)
-                with open(current_directory / Path("messages.txt"), 'a') as messagesf:
+                current_dialog_path.mkdir(parents=True, exist_ok=True)
+                message = event.message
+                with open(current_dialog_path / Path("messages.txt"), 'a') as messagesf:
                     messagesf.write(json.dumps(event.message, default=to_json_custom))
                     messagesf.write("\n")
+                    if message.media:
+                        new_filename = Path(message.file.name if message.file and
+                                                             message.file.name
+                                            else f"{random.Random().randint(1, 1000)}")
+                        self.logger.info('downloading media for message with id = %s with name %s',
+                                     message.id, new_filename)
+                        current_dialog_media_path = current_dialog_path / Path('media')
+                        await message.download_media(file=current_dialog_media_path / new_filename)
         await client.run_until_disconnected()
         logging.info('finished listening messages')
