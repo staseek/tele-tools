@@ -6,16 +6,10 @@ from pathlib import Path
 import telethon
 import json
 from telethon.tl.functions.contacts import GetContactsRequest
-from telethon.tl.types.contacts import Contacts
 from functools import reduce
+from tools.tools import aenumerate, to_json_custom
 
 
-async def aenumerate(asequence, start=0):
-    """Asynchronously enumerate an async iterator from a given start value"""
-    n = start
-    async for elem in asequence:
-        yield n, elem
-        n += 1
 
 class Takeout:
     """
@@ -47,19 +41,6 @@ class Takeout:
         :param args:
         :return:
         """
-
-        def to_json_custom(x) -> str:
-            if hasattr(x, 'to_json'):
-                return json.loads(x.to_json())
-            elif hasattr(x, 'to_dict'):
-                return x.to_dict()
-            else:
-                try:
-                    json.dumps(x)
-                    return x
-                except Exception:
-                    return str(x)
-
         me = await client.get_me()
         current_takeout_path = self.TAKEOUT_DIR / Path(f"{me.phone}_{me.id}")
         current_takeout_path.mkdir(parents=True, exist_ok=True)
